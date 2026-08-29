@@ -16,7 +16,7 @@ export function LoadingSpinner({
       aria-live="polite"
     >
       <svg
-        className="h-8 w-8 animate-spin text-slate-900"
+        className="h-7 w-7 animate-spin text-[#7A1F2B]"
         viewBox="0 0 24 24"
         fill="none"
         aria-hidden="true"
@@ -37,7 +37,7 @@ export function LoadingSpinner({
           strokeLinecap="round"
         />
       </svg>
-      <span className="text-sm font-medium text-slate-600">{label}</span>
+      <span className="text-sm font-medium text-neutral-600">{label}</span>
     </div>
   );
 
@@ -46,9 +46,8 @@ export function LoadingSpinner({
   }
 
   return (
-    <div className="flex min-h-svh items-center justify-center bg-slate-50 px-6">
+    <div className="flex min-h-svh items-center justify-center bg-[#F7F7F7] px-6">
       {spinner}
     </div>
   );
 }
-

@@ -1,4 +1,6 @@
-import { getAccessToken } from "@/lib/auth";
+import { clearAccessToken, getAccessToken } from "@/lib/auth";
+
+export const AUTH_UNAUTHORIZED_EVENT = "jb-admin:unauthorized";
 
 export type ApiErrorCode =
   | "API_CONFIGURATION_ERROR"
@@ -183,7 +185,7 @@ function getDefaultErrorMessage(status: number): string {
 }
 
 async function request<T>(
-  method: "GET" | "POST",
+  method: "GET" | "POST" | "PATCH" | "DELETE",
   path: string,
   options: ApiRequestOptions = {},
 ): Promise<T> {
@@ -201,19 +203,27 @@ async function request<T>(
     headers.set("Accept", "application/json");
   }
 
-  let serializedBody: string | undefined;
+  let serializedBody: BodyInit | undefined;
 
   if (body !== undefined) {
-    if (!headers.has("Content-Type")) {
-      headers.set("Content-Type", "application/json");
-    }
+    const isFormData =
+      typeof FormData !== "undefined" && body instanceof FormData;
 
-    try {
-      serializedBody = JSON.stringify(body);
-    } catch {
-      throw new ApiError("The request could not be prepared.", {
-        code: "INVALID_RESPONSE",
-      });
+    if (isFormData) {
+      headers.delete("Content-Type");
+      serializedBody = body;
+    } else {
+      if (!headers.has("Content-Type")) {
+        headers.set("Content-Type", "application/json");
+      }
+
+      try {
+        serializedBody = JSON.stringify(body);
+      } catch {
+        throw new ApiError("The request could not be prepared.", {
+          code: "INVALID_RESPONSE",
+        });
+      }
     }
   }
 
@@ -252,6 +262,14 @@ async function request<T>(
   const payload = await parseJsonResponse(response);
 
   if (!response.ok) {
+    if (response.status === 401 && auth) {
+      clearAccessToken();
+
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new Event(AUTH_UNAUTHORIZED_EVENT));
+      }
+    }
+
     const safeResponseMessage =
       response.status < 500 ? getResponseMessage(payload) : null;
 
@@ -280,6 +298,18 @@ export const api = {
   ): Promise<T> {
     return request<T>("POST", path, { ...options, body });
   },
+
+  patch<T>(
+    path: string,
+    body?: unknown,
+    options: ApiCallOptions = {},
+  ): Promise<T> {
+    return request<T>("PATCH", path, { ...options, body });
+  },
+
+  delete<T>(path: string, options: ApiCallOptions = {}): Promise<T> {
+    return request<T>("DELETE", path, options);
+  },
 };
 
 export function getApiErrorMessage(
@@ -289,4 +319,21 @@ export function getApiErrorMessage(
   return error instanceof ApiError && error.message.trim()
     ? error.message
     : fallback;
+}
+
+export function getApiFieldErrors(error: unknown): Record<string, string> {
+  if (!(error instanceof ApiError) || !isRecord(error.details)) return {};
+
+  const errors = error.details.errors;
+  if (!Array.isArray(errors)) return {};
+
+  const fieldErrors: Record<string, string> = {};
+
+  for (const item of errors) {
+    if (!isRecord(item) || typeof item.field !== "string" || typeof item.message !== "string") continue;
+    const field = item.field.replace(/^(body|query|params)\./, "");
+    fieldErrors[field] ??= item.message;
+  }
+
+  return fieldErrors;
 }

@@ -17,7 +17,12 @@ import type {
   UserRole,
   UserStatus,
 } from "@/features/auth/auth.types";
-import { ApiError, api, getApiErrorMessage } from "@/lib/api";
+import {
+  AUTH_UNAUTHORIZED_EVENT,
+  ApiError,
+  api,
+  getApiErrorMessage,
+} from "@/lib/api";
 import {
   clearAccessToken,
   getAccessToken,
@@ -325,6 +330,15 @@ export function AuthProvider({ children }: AuthProviderProps) {
     setError(null);
     setIsLoading(false);
   }, []);
+
+  useEffect(() => {
+    const handleUnauthorized = () => logout();
+
+    window.addEventListener(AUTH_UNAUTHORIZED_EVENT, handleUnauthorized);
+    return () => {
+      window.removeEventListener(AUTH_UNAUTHORIZED_EVENT, handleUnauthorized);
+    };
+  }, [logout]);
 
   useEffect(() => {
     if (hasRestoredSessionRef.current) {

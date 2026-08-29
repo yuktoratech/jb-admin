@@ -23,6 +23,17 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     }
   }, [isLoading, router, user]);
 
+  useEffect(() => {
+    if (!isSidebarOpen) return;
+
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setIsSidebarOpen(false);
+    };
+
+    window.addEventListener("keydown", closeOnEscape);
+    return () => window.removeEventListener("keydown", closeOnEscape);
+  }, [isSidebarOpen]);
+
   const handleRestrictedLogout = () => {
     logout();
     router.replace("/login");
@@ -37,9 +48,9 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     const isWrongRole = user.role !== "admin";
 
     return (
-      <main className="flex min-h-svh items-center justify-center bg-slate-100 px-5 py-12">
-        <section className="w-full max-w-lg rounded-3xl border border-slate-200 bg-white p-8 text-center shadow-xl shadow-slate-900/5 sm:p-10">
-          <div className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-amber-50 text-amber-700">
+      <main className="flex min-h-svh items-center justify-center bg-[#F7F7F7] px-5 py-12">
+        <section className="w-full max-w-lg rounded-lg border border-neutral-200 bg-white p-8 text-center sm:p-10">
+          <div className="mx-auto grid h-14 w-14 place-items-center rounded-full bg-neutral-100 text-neutral-700">
             <svg
               className="h-7 w-7"
               viewBox="0 0 24 24"
@@ -52,11 +63,11 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
               <path d="M12 8v4M12 16h.01" />
             </svg>
           </div>
-          <p className="mt-6 text-sm font-semibold text-amber-700">Access restricted</p>
-          <h1 className="mt-2 text-2xl font-semibold tracking-tight text-slate-950">
+          <p className="mt-6 text-sm font-semibold text-[#7A1F2B]">Access restricted</p>
+          <h1 className="mt-2 text-2xl font-semibold tracking-tight text-neutral-950">
             Administrator access required
           </h1>
-          <p className="mt-3 text-sm leading-6 text-slate-600">
+          <p className="mt-3 text-sm leading-6 text-neutral-600">
             {isWrongRole
               ? "This account is authenticated, but it does not have the administrator role required for this workspace."
               : `This administrator account is currently ${user.status}. Only active accounts can open the admin workspace.`}
@@ -64,7 +75,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
           <button
             type="button"
             onClick={handleRestrictedLogout}
-            className="mt-7 inline-flex h-11 items-center justify-center rounded-xl bg-slate-950 px-5 text-sm font-semibold text-white transition hover:bg-slate-800 focus:outline-none focus-visible:ring-4 focus-visible:ring-slate-300"
+            className="mt-7 inline-flex h-11 items-center justify-center rounded-md bg-black px-5 text-sm font-semibold text-white transition hover:bg-neutral-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#7A1F2B]/30"
           >
             Sign out and return to login
           </button>
@@ -74,14 +85,14 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   }
 
   return (
-    <div className="flex min-h-svh bg-slate-100">
+    <div className="flex min-h-svh bg-[#F7F7F7]">
       <AdminSidebar
         isOpen={isSidebarOpen}
         onClose={() => setIsSidebarOpen(false)}
       />
       <div className="flex min-w-0 flex-1 flex-col">
         <AdminHeader onMenuClick={() => setIsSidebarOpen(true)} />
-        <main className="flex-1 p-4 sm:p-6 lg:p-8">{children}</main>
+        <main className="flex-1 p-4 sm:p-6 lg:p-7">{children}</main>
       </div>
     </div>
   );
