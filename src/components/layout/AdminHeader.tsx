@@ -17,6 +17,11 @@ function getInitials(name?: string) {
 function getPageTitle(pathname: string): string {
   if (pathname === "/dashboard") return "Dashboard";
   if (pathname === "/categories") return "Categories";
+  if (pathname === "/subcategories") return "Sub-categories";
+  if (pathname === "/colours") return "Colours";
+  if (pathname === "/size-sets") return "Size Sets";
+  if (pathname === "/fits") return "Fits";
+  if (pathname === "/fabrics") return "Fabrics";
   if (pathname === "/products/new") return "Add Product";
   if (pathname.endsWith("/edit") && pathname.startsWith("/products/")) return "Edit Product";
   if (pathname.startsWith("/products/")) return "Product Details";

@@ -35,6 +35,7 @@ export default function CategoriesPage() {
   const [deactivatingCategory, setDeactivatingCategory] = useState<Category | null>(null);
   const [isDeactivating, setIsDeactivating] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [actionSuccess, setActionSuccess] = useState<string | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
@@ -75,6 +76,7 @@ export default function CategoriesPage() {
     setActionError(null);
     try {
       await categoryApi.deactivate(deactivatingCategory._id);
+      setActionSuccess("Category deactivated successfully.");
       setDeactivatingCategory(null);
       refreshCategories();
     } catch (requestError) {
@@ -89,6 +91,7 @@ export default function CategoriesPage() {
     setActionError(null);
     try {
       await categoryApi.update(category._id, { status: "active" });
+      setActionSuccess("Category activated successfully.");
       refreshCategories();
     } catch (requestError) {
       setActionError(getApiErrorMessage(requestError, "Unable to activate the category."));
@@ -129,6 +132,7 @@ export default function CategoriesPage() {
           </Select>
         </div>
 
+        {actionSuccess ? <div className="border-b border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800" role="status">{actionSuccess}</div> : null}
         {actionError ? <div className="border-b border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800" role="alert">{actionError}</div> : null}
         {isLoading ? <LoadingState label="Loading categories" /> : error ? <ErrorState message={error} onRetry={refreshCategories} /> : categories.length === 0 ? (
           <EmptyState title="No categories found" description={search || status ? "Try changing the search or status filter." : "Add the first category to begin building the product catalog."} action={!search && !status ? <Button size="sm" onClick={() => setIsFormOpen(true)}>Add Category</Button> : undefined} />
@@ -143,7 +147,7 @@ export default function CategoriesPage() {
           isOpen
           category={editingCategory}
           onClose={() => { setIsFormOpen(false); setEditingCategory(null); }}
-          onSaved={() => { setPage(1); refreshCategories(); }}
+          onSaved={() => { setActionSuccess(`Category ${editingCategory ? "updated" : "created"} successfully.`); setPage(1); refreshCategories(); }}
         />
       ) : null}
       <ConfirmDialog

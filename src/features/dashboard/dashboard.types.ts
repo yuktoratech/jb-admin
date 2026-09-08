@@ -8,12 +8,11 @@ export interface DashboardInventoryItem {
   sku: string;
   productName: string;
   productCode?: string;
-  color: string;
-  sizeSet: string;
+  colour: { name: string } | string | null;
+  sizeSet: { label: string } | string;
   variantStatus: "active" | "inactive";
   totalQuantity: number;
   availableQuantity: number;
-  reservedQuantity: number;
   status: "in_stock" | "out_of_stock";
   updatedAt: string | null;
 }

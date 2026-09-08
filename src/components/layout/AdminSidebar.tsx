@@ -51,6 +51,31 @@ const navigationSections: Array<{
         ),
       },
       {
+        label: "Sub-categories",
+        href: "/subcategories",
+        icon: <svg className={iconClass} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true"><path d="M4 6h7v5H4V6Zm9 7h7v5h-7v-5ZM8 11v4h5" /></svg>,
+      },
+      {
+        label: "Colours",
+        href: "/colours",
+        icon: <svg className={iconClass} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true"><circle cx="12" cy="12" r="9" /><path d="M8 15h.01M8 9h.01M12 7h.01M16 10h.01" /></svg>,
+      },
+      {
+        label: "Size Sets",
+        href: "/size-sets",
+        icon: <svg className={iconClass} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true"><path d="M4 7h16v10H4zM8 7v4m4-4v2m4-2v4" /></svg>,
+      },
+      {
+        label: "Fits",
+        href: "/fits",
+        icon: <svg className={iconClass} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true"><path d="M5 4h14v16H5zM9 4v4m6-4v4M9 16v4m6-4v4" /></svg>,
+      },
+      {
+        label: "Fabrics",
+        href: "/fabrics",
+        icon: <svg className={iconClass} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true"><path d="m4 7 8-4 8 4-8 4-8-4Zm0 5 8 4 8-4M4 17l8 4 8-4" /></svg>,
+      },
+      {
         label: "Products",
         href: "/products",
         icon: (
@@ -75,6 +100,24 @@ const navigationSections: Array<{
           </svg>
         ),
       },
+      {
+        label: "Stock Upload",
+        href: "/inventory/import",
+        icon: <svg className={iconClass} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true"><path d="M12 16V4m0 0L8 8m4-4 4 4"/><path d="M5 14v5h14v-5"/></svg>,
+      },
+    ],
+  },
+  {
+    label: "Accounts",
+    items: [
+      { label: "Wholesalers", href: "/wholesalers", icon: <svg className={iconClass} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><circle cx="9" cy="8" r="3"/><path d="M3 20v-2a6 6 0 0 1 12 0v2M16 5a3 3 0 0 1 0 6M17 14a5 5 0 0 1 4 5"/></svg> },
+      { label: "Retailers", href: "/retailers", icon: <svg className={iconClass} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><circle cx="8" cy="9" r="3"/><circle cx="17" cy="9" r="3"/><path d="M2 20a6 6 0 0 1 12 0M12 20a5 5 0 0 1 10 0"/></svg> },
+    ],
+  },
+  {
+    label: "Orders",
+    items: [
+      { label: "Orders", href: "/orders", icon: <svg className={iconClass} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M5 3h14v18l-3-2-4 2-4-2-3 2V3Z"/><path d="M8 8h8M8 12h8M8 16h5"/></svg> },
     ],
   },
 ];
@@ -119,7 +162,8 @@ export function AdminSidebar({ isOpen, onClose }: AdminSidebarProps) {
               {section.label ? <p className="mb-2 px-3 text-[10px] font-semibold uppercase tracking-[0.18em] text-neutral-500">{section.label}</p> : null}
               <ul className="space-y-1">
                 {section.items.map((item) => {
-                  const isActive = pathname === item.href || (item.href !== "/dashboard" && pathname.startsWith(`${item.href}/`));
+                  const isInventoryIndex = item.href === "/inventory";
+                  const isActive = pathname === item.href || (item.href !== "/dashboard" && (!isInventoryIndex || !pathname.startsWith("/inventory/import")) && pathname.startsWith(`${item.href}/`));
                   return (
                     <li key={item.href}>
                       <Link

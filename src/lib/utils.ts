@@ -40,6 +40,11 @@ export function formatCurrency(value?: number | null): string {
   }).format(value);
 }
 
+export function formatMinorCurrency(value?: number | null): string {
+  if (typeof value !== "number" || !Number.isSafeInteger(value)) return "—";
+  return formatCurrency(value / 100);
+}
+
 type QueryValue = string | number | boolean | null | undefined;
 
 export function buildQueryString<T extends object>(values: T): string {
@@ -59,10 +64,16 @@ export function normalizeSkuPart(value: string): string {
     .normalize("NFKD")
     .replace(/[\u0300-\u036f]/g, "")
     .trim()
-    .toUpperCase()
+    .toLowerCase()
     .replace(/[\u2018\u2019']/g, "")
     .replace(/[\s_]+/g, "-")
-    .replace(/[^A-Z0-9-]+/g, "-")
+    .replace(/[^a-z0-9-]+/g, "-")
     .replace(/-+/g, "-")
     .replace(/^-|-$/g, "");
+}
+
+export function previewGeneratedSku(productCode: string, sizeSetLabel: string): string {
+  const code = productCode.normalize("NFKD").replace(/[\u0300-\u036f]/g, "").trim().toLowerCase().replace(/\s+/g, "_").replace(/_+/g, "_").replace(/[^a-z0-9_]/g, "").replace(/^_+|_+$/g, "");
+  const size = sizeSetLabel.normalize("NFKD").replace(/[\u0300-\u036f]/g, "").trim().toLowerCase().replace(/\s*-\s*/g, "-").replace(/\s+/g, "").replace(/-+/g, "-").replace(/[^a-z0-9-]/g, "").replace(/^-+|-+$/g, "");
+  return code && size ? `${code}_${size}` : "";
 }

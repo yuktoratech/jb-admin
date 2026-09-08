@@ -10,7 +10,7 @@ import { useAuth } from "@/features/auth/AuthProvider";
 import { dashboardApi } from "@/features/dashboard/dashboard.api";
 import type { DashboardOverview, DashboardTotals } from "@/features/dashboard/dashboard.types";
 import { ApiError, getApiErrorMessage } from "@/lib/api";
-import { formatCurrency, formatDate } from "@/lib/utils";
+import { formatMinorCurrency, formatDate } from "@/lib/utils";
 
 const metricLabels: Array<{ key: keyof DashboardTotals; label: string; note: string }> = [
   { key: "categories", label: "Total Categories", note: "All category records" },
@@ -129,14 +129,14 @@ export default function DashboardPage() {
                         <tr key={product._id} className="text-sm text-neutral-700">
                           <td className="px-5 py-3.5">
                             <Link href={`/products/${product._id}`} className="font-semibold text-neutral-950 hover:text-[#7A1F2B]">
-                              {product.productName}
+                              {product.name}
                             </Link>
                             <p className="mt-0.5 max-w-[260px] truncate text-xs text-neutral-500">
-                              {product.productCode || product.title}
+                              {product.description || "No description"}
                             </p>
                           </td>
                           <td className="px-4 py-3.5">{product.category?.name || "—"}</td>
-                          <td className="whitespace-nowrap px-4 py-3.5 font-medium text-neutral-950">{formatCurrency(product.mrp)}</td>
+                          <td className="whitespace-nowrap px-4 py-3.5 font-medium text-neutral-950">{formatMinorCurrency(product.mrpPerPieceMinor)}</td>
                           <td className="px-4 py-3.5">
                             <Badge tone={product.status === "active" ? "active" : "inactive"}>{product.status}</Badge>
                           </td>
@@ -177,7 +177,7 @@ export default function DashboardPage() {
                           {item.sku}
                         </Link>
                         <p className="mt-1 truncate text-xs text-neutral-500">
-                          {item.productName} · {item.color} · {item.sizeSet}
+                          {item.productName} · {typeof item.colour === "string" ? item.colour : item.colour?.name || "—"} · {typeof item.sizeSet === "string" ? item.sizeSet : item.sizeSet.label}
                         </p>
                       </div>
                       <Badge tone="inactive">Out of stock</Badge>

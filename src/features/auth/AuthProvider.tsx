@@ -101,7 +101,17 @@ function parseUserRecord(record: UnknownRecord): User | null {
     email,
     role: rawRole as UserRole,
     status: rawStatus as UserStatus,
+    discountPercent:
+      typeof record.discountPercent === "number" ? record.discountPercent : 0,
+    parentWholesaler:
+      typeof record.parentWholesaler === "string"
+        ? record.parentWholesaler
+        : null,
   };
+
+  if (typeof record.phone === "string") {
+    user.phone = record.phone;
+  }
 
   if (typeof record.isEmailVerified === "boolean") {
     user.isEmailVerified = record.isEmailVerified;

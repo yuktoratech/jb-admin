@@ -1,16 +1,7 @@
+import type { Category, CatalogStatus } from "@/features/catalog/catalog.types";
 import type { Pagination } from "@/types/api";
-
-export type CategoryStatus = "active" | "inactive";
-
-export interface Category {
-  _id: string;
-  name: string;
-  slug: string;
-  description?: string;
-  status: CategoryStatus;
-  createdAt: string;
-  updatedAt: string;
-}
+export type { Category } from "@/features/catalog/catalog.types";
+export type CategoryStatus = CatalogStatus;
 
 export interface CategoryListData {
   categories: Category[];

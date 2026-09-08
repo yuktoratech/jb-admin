@@ -8,12 +8,20 @@ export interface User {
   _id: string;
   name: string;
   email: string;
+  phone?: string;
   role: UserRole;
   status: UserStatus;
   isEmailVerified?: boolean;
   lastLoginAt?: string | null;
   createdAt?: string;
   updatedAt?: string;
+  discountPercent: number;
+  parentWholesaler: string | null;
+}
+
+export interface AdminUser extends User {
+  role: "admin";
+  parentWholesaler: null;
 }
 
 export interface LoginCredentials {
@@ -30,6 +38,11 @@ export type LoginResponse = ApiResponse<LoginData>;
 
 export type CurrentUserResponse = ApiResponse<User>;
 
+export interface ForgotPasswordPayload { email: string; }
+export interface ResetPasswordPayload { token: string; newPassword: string; }
+export interface ChangePasswordPayload { currentPassword: string; newPassword: string; }
+export interface PasswordActionData { message: string; }
+
 export interface AuthContextValue {
   user: User | null;
   isLoading: boolean;
@@ -40,4 +53,3 @@ export interface AuthContextValue {
   refreshCurrentUser: () => Promise<User | null>;
   clearError: () => void;
 }
-

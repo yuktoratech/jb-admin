@@ -7,9 +7,14 @@ export interface ApiResponse<T> {
 
 export interface ApiErrorResponse {
   success: false;
-  statusCode?: number;
   message: string;
-  errors?: unknown[];
+  errors: ApiValidationError[];
+}
+
+export interface ApiValidationError {
+  field?: string;
+  message: string;
+  [key: string]: unknown;
 }
 
 export interface Pagination {

@@ -11,7 +11,6 @@ import { PageHeader } from "@/components/ui/PageHeader";
 import { Pagination } from "@/components/ui/Pagination";
 import { Select } from "@/components/ui/Select";
 import { Table, type TableColumn } from "@/components/ui/Table";
-import { InventoryAdjustmentModal } from "@/features/inventory/InventoryAdjustmentModal";
 import { inventoryApi } from "@/features/inventory/inventory.api";
 import type {
   InventoryDetail,
@@ -41,7 +40,6 @@ export default function InventoryDetailPage() {
   const [transactionSource, setTransactionSource] = useState<InventoryTransactionSource | "">("");
   const [transactionError, setTransactionError] = useState<string | null>(null);
   const [isTransactionsLoading, setIsTransactionsLoading] = useState(true);
-  const [isAdjustmentOpen, setIsAdjustmentOpen] = useState(false);
   const [detailReloadKey, setDetailReloadKey] = useState(0);
   const [transactionReloadKey, setTransactionReloadKey] = useState(0);
 
@@ -100,26 +98,22 @@ export default function InventoryDetailPage() {
     setTransactionReloadKey((key) => key + 1);
   };
 
-  const refreshAfterAdjustment = () => {
-    setDetailReloadKey((key) => key + 1);
-    setTransactionReloadKey((key) => key + 1);
-  };
-
   if (isDetailLoading) return <LoadingState label="Loading inventory details" />;
   if (detailError || !inventory) return <ErrorState message={detailError ?? "Inventory details are unavailable."} onRetry={retryDetail} />;
 
   const shelfColumns: Array<TableColumn<InventoryShelf>> = [
     { key: "shelf", header: "Shelf", render: (item) => <span className="font-medium text-neutral-950">{item.shelf}</span> },
-    { key: "quantity", header: "Quantity", className: "text-right", render: (item) => <span className="font-semibold text-neutral-950">{item.quantity}</span> },
+    { key: "quantity", header: "Quantity (Sets)", className: "text-right", render: (item) => <span className="font-semibold text-neutral-950">{item.quantity}</span> },
   ];
 
   const transactionColumns: Array<TableColumn<InventoryTransaction>> = [
     { key: "date", header: "Date", className: "min-w-40", render: (item) => formatDateTime(item.createdAt) },
     { key: "type", header: "Type", render: (item) => <Badge tone={item.type === "ADD" || item.type === "TRANSFER" ? "maroon" : "neutral"}>{formatLabel(item.type)}</Badge> },
-    { key: "quantity", header: "Quantity", className: "text-right", render: (item) => <span className="font-semibold text-neutral-950">{item.quantity}</span> },
+    { key: "quantity", header: "Quantity (Sets)", className: "text-right", render: (item) => <span className={`font-semibold ${item.type === "REMOVE" || item.type === "ORDER_DEDUCT" ? "text-red-700" : item.type === "ADD" ? "text-green-700" : "text-blue-700"}`}>{item.type === "ADD" ? "+" : item.type === "REMOVE" || item.type === "ORDER_DEDUCT" ? "−" : ""}{item.quantity}</span> },
     { key: "fromShelf", header: "From Shelf", render: (item) => item.fromShelf || "—" },
     { key: "toShelf", header: "To Shelf", render: (item) => item.toShelf || "—" },
     { key: "source", header: "Source", render: (item) => formatLabel(item.source) },
+    { key: "result", header: "Resulting Balance", className: "text-right", render: (item) => item.newQuantity ?? "—" },
     { key: "performedBy", header: "Performed By", className: "min-w-40", render: (item) => formatActor(item.performedBy) },
   ];
 
@@ -127,11 +121,10 @@ export default function InventoryDetailPage() {
     <div className="mx-auto w-full max-w-[1500px]">
       <PageHeader
         title={inventory.sku}
-        description={`${inventory.product.productName} · ${inventory.color} · ${inventory.sizeSet}`}
+        description={`${inventory.product.name} · ${typeof inventory.colour === "string" ? inventory.colour : inventory.colour?.name || "—"} · ${typeof inventory.sizeSet === "string" ? inventory.sizeSet : inventory.sizeSet.label}`}
         actions={
           <>
             <Button variant="secondary" onClick={() => router.push("/inventory")}>Back to Inventory</Button>
-            <Button onClick={() => setIsAdjustmentOpen(true)}>Adjust Stock</Button>
           </>
         }
       />
@@ -146,19 +139,19 @@ export default function InventoryDetailPage() {
         </header>
         <dl className="grid gap-x-8 gap-y-5 p-5 sm:grid-cols-2 sm:p-6 lg:grid-cols-4">
           <Detail label="SKU" value={inventory.sku} mono />
-          <Detail label="Product" value={inventory.product.productName} />
-          <Detail label="Product Code" value={inventory.product.productCode || "—"} />
+          <Detail label="Product" value={inventory.product.name} />
+          <Detail label="Product Code" value={inventory.productColour?.productCode || "—"} />
           <Detail label="Category" value={inventory.product.category.name} />
-          <Detail label="Color" value={inventory.color} />
-          <Detail label="Size Set" value={inventory.sizeSet} />
+          <Detail label="Colour" value={typeof inventory.colour === "string" ? inventory.colour : inventory.colour?.name || "—"} />
+          <Detail label="Size Set" value={typeof inventory.sizeSet === "string" ? inventory.sizeSet : inventory.sizeSet.label} />
+          <Detail label="Pieces per Set" value={typeof inventory.sizeSet === "string" ? "—" : String(inventory.sizeSet.pieceCount)} />
           <Detail label="Variant Status" value={formatLabel(inventory.variantStatus)} />
           <Detail label="Last Updated" value={formatDateTime(inventory.updatedAt)} />
         </dl>
       </section>
 
-      <section className="mt-6 grid gap-px overflow-hidden rounded-lg border border-neutral-200 bg-neutral-200 sm:grid-cols-3">
+      <section className="mt-6 grid gap-px overflow-hidden rounded-lg border border-neutral-200 bg-neutral-200 sm:grid-cols-2">
         <QuantityMetric label="Available Quantity" value={inventory.availableQuantity} emphasized />
-        <QuantityMetric label="Reserved Quantity" value={inventory.reservedQuantity} />
         <QuantityMetric label="Total Quantity" value={inventory.totalQuantity} />
       </section>
 
@@ -179,7 +172,7 @@ export default function InventoryDetailPage() {
           <div className="grid gap-3 sm:grid-cols-2 lg:w-[420px]">
             <Select aria-label="Filter transactions by type" value={transactionType} onChange={(event) => { setTransactionPage(1); setTransactionType(event.target.value as InventoryTransactionType | ""); }}>
               <option value="">All types</option>
-              {["ADD", "REMOVE", "TRANSFER", "ORDER_RESERVE", "ORDER_RELEASE", "ORDER_DEDUCT", "MANUAL_ADJUSTMENT"].map((type) => <option key={type} value={type}>{formatLabel(type)}</option>)}
+              {["ADD", "REMOVE", "TRANSFER", "ORDER_DEDUCT", "MANUAL_ADJUSTMENT"].map((type) => <option key={type} value={type}>{formatLabel(type)}</option>)}
             </Select>
             <Select aria-label="Filter transactions by source" value={transactionSource} onChange={(event) => { setTransactionPage(1); setTransactionSource(event.target.value as InventoryTransactionSource | ""); }}>
               <option value="">All sources</option>
@@ -204,15 +197,6 @@ export default function InventoryDetailPage() {
         )}
       </section>
 
-      {isAdjustmentOpen ? (
-        <InventoryAdjustmentModal
-          isOpen
-          initialSku={inventory.sku}
-          shelves={inventory.shelves}
-          onClose={() => setIsAdjustmentOpen(false)}
-          onAdjusted={refreshAfterAdjustment}
-        />
-      ) : null}
     </div>
   );
 }

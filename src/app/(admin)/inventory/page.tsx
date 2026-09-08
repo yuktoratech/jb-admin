@@ -13,8 +13,6 @@ import { EmptyState, ErrorState, LoadingState } from "@/components/ui/StateDispl
 import { Table, type TableColumn } from "@/components/ui/Table";
 import { categoryApi } from "@/features/categories/category.api";
 import type { Category } from "@/features/categories/category.types";
-import { InventoryAdjustmentModal } from "@/features/inventory/InventoryAdjustmentModal";
-import { InventoryImportModal } from "@/features/inventory/InventoryImportModal";
 import { inventoryApi } from "@/features/inventory/inventory.api";
 import type { InventoryListItem, InventoryStockStatus } from "@/features/inventory/inventory.types";
 import { productApi } from "@/features/products/product.api";
@@ -43,9 +41,6 @@ export default function InventoryPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [optionsWarning, setOptionsWarning] = useState<string | null>(null);
-  const [isAdjustmentOpen, setIsAdjustmentOpen] = useState(false);
-  const [adjustingItem, setAdjustingItem] = useState<InventoryListItem | null>(null);
-  const [isImportOpen, setIsImportOpen] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
@@ -111,18 +106,16 @@ export default function InventoryPage() {
   const columns: Array<TableColumn<InventoryListItem>> = [
     { key: "sku", header: "SKU", className: "min-w-56", render: (item) => <code className="text-xs font-semibold text-neutral-950">{item.sku}</code> },
     { key: "product", header: "Product", className: "min-w-44", render: (item) => <div><p className="font-medium text-neutral-950">{item.productName}</p><p className="mt-0.5 text-xs text-neutral-500">{item.productCode || "No product code"}</p></div> },
-    { key: "color", header: "Color", render: (item) => item.color },
-    { key: "sizeSet", header: "Size Set", render: (item) => item.sizeSet },
+    { key: "colour", header: "Colour", render: (item) => typeof item.colour === "string" ? item.colour : item.colour?.name || "—" },
+    { key: "sizeSet", header: "Size Set", render: (item) => typeof item.sizeSet === "string" ? item.sizeSet : item.sizeSet.label },
     { key: "category", header: "Category", render: (item) => <span title={categoryNames.has(item.categoryId) ? undefined : `Category ID: ${item.categoryId}`}>{categoryNames.get(item.categoryId) || "Unavailable"}</span> },
-    { key: "available", header: "Available", className: "text-right", render: (item) => <span className="font-semibold text-neutral-950">{item.availableQuantity}</span> },
-    { key: "reserved", header: "Reserved", className: "text-right", render: (item) => item.reservedQuantity },
-    { key: "total", header: "Total", className: "text-right", render: (item) => item.totalQuantity },
+    { key: "sets", header: "Sets in Stock", className: "text-right", render: (item) => <span className="font-semibold text-neutral-950">{item.availableQuantity}</span> },
+    { key: "shelves", header: "Shelf Summary", className: "min-w-48", render: (item) => item.shelves.length ? item.shelves.map((entry) => `${entry.shelf}: ${entry.quantity}`).join(" · ") : "No shelf stock" },
     { key: "status", header: "Stock Status", render: (item) => <Badge tone={item.status === "in_stock" ? "active" : "inactive"}>{item.status === "in_stock" ? "In Stock" : "Out of Stock"}</Badge> },
     { key: "updated", header: "Updated", className: "min-w-40", render: (item) => formatDateTime(item.updatedAt) },
     { key: "actions", header: <span className="sr-only">Actions</span>, className: "min-w-40 text-right", render: (item) => (
       <div className="flex justify-end gap-1">
         <Link href={`/inventory/${item.variantId}`} className={actionLinkClass}>View</Link>
-        <Button variant="ghost" size="sm" onClick={() => { setAdjustingItem(item); setIsAdjustmentOpen(true); }}>Adjust</Button>
       </div>
     ) },
   ];
@@ -133,11 +126,10 @@ export default function InventoryPage() {
     <div className="mx-auto w-full max-w-[1600px]">
       <PageHeader
         title="Inventory"
-        description="Review SKU stock, adjust shelves, and import validated XLSX adjustment batches."
+        description="Review SKU stock and import validated XLSX adjustment batches."
         actions={
           <>
-            <Button variant="secondary" onClick={() => setIsImportOpen(true)}>Import Inventory</Button>
-            <Button onClick={() => { setAdjustingItem(null); setIsAdjustmentOpen(true); }}>Adjust Stock</Button>
+            <Link href="/inventory/import" className="inline-flex h-10 items-center rounded-md border border-[#7A1F2B] bg-[#7A1F2B] px-4 text-sm font-semibold text-white transition-colors hover:bg-[#641924]">Stock Upload (XLSX)</Link>
           </>
         }
       />
@@ -148,7 +140,7 @@ export default function InventoryPage() {
           <Input aria-label="Filter by exact SKU" placeholder="Exact SKU" value={sku} onChange={(event) => setSku(event.target.value)} maxLength={255} />
           <Select aria-label="Filter by product" value={product} onChange={(event) => { setPage(1); setProduct(event.target.value); }}>
             <option value="">All products</option>
-            {products.map((item) => <option key={item._id} value={item._id}>{item.productName}{item.productCode ? ` · ${item.productCode}` : ""}</option>)}
+            {products.map((item) => <option key={item._id} value={item._id}>{item.name}</option>)}
           </Select>
           <Select aria-label="Filter by category" value={category} onChange={(event) => { setPage(1); setCategory(event.target.value); }}>
             <option value="">All categories</option>
@@ -176,17 +168,6 @@ export default function InventoryPage() {
         )}
       </section>
 
-      {isAdjustmentOpen ? (
-        <InventoryAdjustmentModal
-          key={adjustingItem?.variantId ?? "manual-adjustment"}
-          isOpen
-          initialSku={adjustingItem?.sku}
-          shelves={adjustingItem?.shelves}
-          onClose={() => setIsAdjustmentOpen(false)}
-          onAdjusted={refreshInventory}
-        />
-      ) : null}
-      {isImportOpen ? <InventoryImportModal isOpen onClose={() => setIsImportOpen(false)} onImported={refreshInventory} /> : null}
     </div>
   );
 }

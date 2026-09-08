@@ -1,5 +1,9 @@
-import { ProductForm } from "@/features/products/ProductForm";
+import Link from "next/link";
+import { Button } from "@/components/ui/Button";
+import { PageHeader } from "@/components/ui/PageHeader";
 
 export default function NewProductPage() {
-  return <ProductForm mode="create" />;
+  return <div className="mx-auto w-full max-w-6xl"><PageHeader title="Add Product" description="Choose how you want to create finalized catalog Products." /><div className="grid gap-6 lg:grid-cols-2"><Option title="Manual Product Creation" description="Add one Product with its Colours and Size Sets in a guided workflow." points={["Use existing catalog masters", "Review generated SKU structure", "Upload colour images after creation"]} href="/products/new/manual" label="Add Product Manually" tone="maroon" /><Option title="Product Listing XLSX" description="Upload many Products using the finalized spreadsheet contract." points={["Server-side validation", "Read-only preview and row errors", "Atomic all-or-nothing Apply"]} href="/products/import" label="Import Products (XLSX)" tone="green" /></div><Link href="/products"><Button className="mt-6" variant="secondary">Back to Products</Button></Link></div>;
 }
+
+function Option({ title, description, points, href, label, tone }: { title: string; description: string; points: string[]; href: string; label: string; tone: "maroon" | "green" }) { return <section className={`rounded-xl border p-8 ${tone === "green" ? "border-green-300 bg-green-50/50" : "border-[#7A1F2B]/30 bg-red-50/40"}`}><div className={`grid h-14 w-14 place-items-center rounded-full text-2xl ${tone === "green" ? "bg-green-100 text-green-800" : "bg-red-100 text-[#7A1F2B]"}`}>{tone === "green" ? "X" : "+"}</div><h2 className="mt-6 text-xl font-semibold">{title}</h2><p className="mt-2 text-sm leading-6 text-neutral-600">{description}</p><ul className="my-6 space-y-2 text-sm text-neutral-700">{points.map((point) => <li key={point}>✓ {point}</li>)}</ul><Link href={href}><Button className={tone === "green" ? "border-green-700 bg-green-700 hover:border-green-800 hover:bg-green-800" : ""}>{label}</Button></Link></section>; }
