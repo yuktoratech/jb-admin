@@ -1,6 +1,7 @@
 "use client";
 
 import { type FormEvent, useEffect, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 import { Button } from "@/components/ui/Button";
@@ -151,6 +152,12 @@ export default function LoginPage() {
                 error={fieldErrors.password}
                 placeholder="Enter your password"
               />
+
+              <div className="text-right">
+                <Link href="/forgot-password" className="text-sm font-semibold text-[#7A1F2B] hover:underline">
+                  Forgot password?
+                </Link>
+              </div>
 
               <Button type="submit" size="lg" className="w-full" isLoading={isSubmitting} loadingLabel="Signing in">
                 Sign in

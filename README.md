@@ -1,6 +1,6 @@
 # Just Black Admin
 
-Internal B2B administration frontend for the Just Black catalogue and inventory APIs.
+Internal B2B administration frontend for Just Black account, catalogue, inventory, and order operations.
 
 ## Local setup
 
@@ -22,21 +22,24 @@ The configured backend must be running and have an active administrator account.
 ## Available routes
 
 - `/login` — administrator sign-in
-- `/dashboard` — live catalogue and inventory totals
-- `/categories` — category CRUD and activation state
+- `/forgot-password` and `/reset-password` — email password recovery
+- `/dashboard` — live account, catalogue, stock, and order totals and operational queues
+- `/wholesalers` — Wholesaler account management
+- `/retailers` — read-only Admin view of Wholesaler-owned Retailers
+- `/categories`, `/subcategories`, `/colours`, `/size-sets`, `/fits`, `/fabrics` — catalogue masters
 - `/products` — product list and filters
-- `/products/new` — product, color, size-set, and SKU-preview builder
-- `/products/[id]` — product and variant management
-- `/products/[id]/edit` — product information editing
-- `/inventory` — inventory list, filters, adjustments, and XLSX import
-- `/inventory/[variantId]` — shelf stock and transaction history
+- `/products/new` — choose manual entry or XLSX import
+- `/inventory` — paginated SKU stock visibility and filters
+- `/inventory/import` — XLSX-only Upload → Preview → Verify → atomic Apply workflow
+- `/orders` — order review, adjustment, cancellation, and final Admin confirmation
 
-All business data comes from the configured backend. Orders, wholesalers, and retailers are intentionally omitted until their APIs are ready.
+Inventory is changed through validated XLSX batches. The Admin frontend does not provide manual ADD, REMOVE, or TRANSFER controls.
 
-## Verification
+## Validation
 
 ```bash
 npm run lint
 npm run typecheck
+npm test
 npm run build
 ```

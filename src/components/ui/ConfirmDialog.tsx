@@ -11,6 +11,7 @@ interface ConfirmDialogProps {
   cancelLabel?: string;
   isConfirming?: boolean;
   tone?: "primary" | "danger";
+  error?: string | null;
   onConfirm: () => void;
   onClose: () => void;
 }
@@ -23,6 +24,7 @@ export function ConfirmDialog({
   cancelLabel = "Cancel",
   isConfirming = false,
   tone = "primary",
+  error,
   onConfirm,
   onClose,
 }: ConfirmDialogProps) {
@@ -49,7 +51,14 @@ export function ConfirmDialog({
         </>
       }
     >
-      <p className="text-sm leading-6 text-neutral-600">{description}</p>
+      <div className="space-y-4">
+        <p className="text-sm leading-6 text-neutral-600">{description}</p>
+        {error ? (
+          <div role="alert" className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+            {error}
+          </div>
+        ) : null}
+      </div>
     </Modal>
   );
 }

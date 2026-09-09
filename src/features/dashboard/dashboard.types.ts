@@ -1,4 +1,4 @@
-import type { Product } from "@/features/products/product.types";
+import type { Order } from "@/features/orders/order.types";
 
 export interface DashboardInventoryItem {
   inventoryId: string | null;
@@ -18,15 +18,19 @@ export interface DashboardInventoryItem {
 }
 
 export interface DashboardTotals {
-  categories: number;
+  wholesalers: number;
+  retailers: number;
   products: number;
   skus: number;
   inStockSkus: number;
   outOfStockSkus: number;
+  orders: number;
+  pendingAdminOrders: number;
 }
 
 export interface DashboardOverview {
   totals: DashboardTotals;
-  recentProducts: Product[];
+  pendingOrders: Order[];
+  recentOrders: Order[];
   inventoryAttention: DashboardInventoryItem[];
 }

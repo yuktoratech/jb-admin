@@ -17,6 +17,7 @@ const rowColumns: Array<TableColumn<InventoryImportPreviewRow>> = [
   { key: "row", header: "Row", render: (row) => row.rowNumber },
   { key: "sku", header: "SKU", className: "min-w-52", render: (row) => <code className="text-xs font-semibold text-neutral-950">{row.sku}</code> },
   { key: "product", header: "Product", render: (row) => row.productName },
+  { key: "resolution", header: "Resolution", render: (row) => <Badge tone={row.resolution === "CREATE_SKU" ? "warning" : "active"}>{row.resolution === "CREATE_SKU" ? "Create SKU" : "Existing SKU"}</Badge> },
   { key: "type", header: "Type", render: (row) => <OperationBadge type={row.type} /> },
   { key: "quantity", header: "Quantity (Sets)", className: "text-right", render: (row) => row.quantity },
   { key: "shelf", header: "Shelf", render: (row) => row.shelf },

@@ -12,12 +12,12 @@ import { categoryApi } from "@/features/categories/category.api";
 import { colourApi, fabricApi, fitApi, sizeSetApi, subCategoryApi } from "@/features/catalog/catalog.api";
 import type { Category, Colour, Fabric, Fit, SizeSet, SubCategory } from "@/features/catalog/catalog.types";
 import { getApiErrorMessage } from "@/lib/api";
+import { collectAllPages } from "@/lib/pagination";
 import { formatMinorCurrency, previewGeneratedSku } from "@/lib/utils";
 import { productApi } from "./product.api";
 import type { CatalogStatus, Product, ProductPayload, ProductUpdatePayload } from "./product.types";
 
 type ColourDraft = { key: string; colourId: string; productCode: string; sizeSetIds: string[]; status: CatalogStatus };
-const activeParams = { limit: 100, status: "active" as const };
 const minorFromRupees = (value: string) => { if (!/^\d+(?:\.\d{1,2})?$/.test(value.trim())) return null; const [whole, decimal = ""] = value.trim().split("."); const minor = Number(whole) * 100 + Number(decimal.padEnd(2, "0")); return Number.isSafeInteger(minor) ? minor : null; };
 const idOf = (value: string | { _id: string }) => typeof value === "string" ? value : value._id;
 
@@ -32,8 +32,14 @@ export function ProductForm({ mode, product }: { mode: "create" | "edit"; produc
   const [categories, setCategories] = useState<Category[]>([]); const [subCategories, setSubCategories] = useState<SubCategory[]>([]); const [colours, setColours] = useState<Colour[]>([]); const [fits, setFits] = useState<Fit[]>([]); const [fabrics, setFabrics] = useState<Fabric[]>([]); const [sizeSets, setSizeSets] = useState<SizeSet[]>([]);
   const [loadingMasters, setLoadingMasters] = useState(true); const [error, setError] = useState<string | null>(null); const [saving, setSaving] = useState(false);
 
-  useEffect(() => { let active = true; Promise.all([categoryApi.list(activeParams), colourApi.list(activeParams), fitApi.list(activeParams), fabricApi.list(activeParams), sizeSetApi.list(activeParams)]).then(([categoryData, colourData, fitData, fabricData, sizeSetData]) => { if (!active) return; setCategories(categoryData.categories); setColours(colourData.colours); setFits(fitData.fits); setFabrics(fabricData.fabrics); setSizeSets(sizeSetData.sizeSets); }).catch((reason) => { if (active) setError(getApiErrorMessage(reason, "Unable to load Product masters.")); }).finally(() => { if (active) setLoadingMasters(false); }); return () => { active = false; }; }, []);
-  useEffect(() => { if (!categoryId) { setSubCategories([]); setSubCategoryId(""); return; } let active = true; subCategoryApi.list({ ...activeParams, categoryId }).then((data) => { if (active) { setSubCategories(data.subCategories); if (!data.subCategories.some((entry) => entry._id === subCategoryId)) setSubCategoryId(""); } }).catch((reason) => { if (active) setError(getApiErrorMessage(reason, "Unable to load Sub-categories.")); }); return () => { active = false; }; }, [categoryId, subCategoryId]);
+  useEffect(() => { let active = true; Promise.all([
+    collectAllPages({ fetchPage: (page, limit) => categoryApi.list({ page, limit, status: "active" }), getItems: (data) => data.categories }),
+    collectAllPages({ fetchPage: (page, limit) => colourApi.list({ page, limit, status: "active" }), getItems: (data) => data.colours }),
+    collectAllPages({ fetchPage: (page, limit) => fitApi.list({ page, limit, status: "active" }), getItems: (data) => data.fits }),
+    collectAllPages({ fetchPage: (page, limit) => fabricApi.list({ page, limit, status: "active" }), getItems: (data) => data.fabrics }),
+    collectAllPages({ fetchPage: (page, limit) => sizeSetApi.list({ page, limit, status: "active" }), getItems: (data) => data.sizeSets }),
+  ]).then(([categoryData, colourData, fitData, fabricData, sizeSetData]) => { if (!active) return; setCategories(categoryData); setColours(colourData); setFits(fitData); setFabrics(fabricData); setSizeSets(sizeSetData); }).catch((reason) => { if (active) setError(getApiErrorMessage(reason, "Unable to load Product masters.")); }).finally(() => { if (active) setLoadingMasters(false); }); return () => { active = false; }; }, []);
+  useEffect(() => { if (!categoryId) { setSubCategories([]); setSubCategoryId(""); return; } let active = true; collectAllPages({ fetchPage: (page, limit) => subCategoryApi.list({ page, limit, status: "active", categoryId }), getItems: (data) => data.subCategories }).then((data) => { if (active) { setSubCategories(data); setSubCategoryId((current) => data.some((entry) => entry._id === current) ? current : ""); } }).catch((reason) => { if (active) setError(getApiErrorMessage(reason, "Unable to load Sub-categories.")); }); return () => { active = false; }; }, [categoryId]);
 
   const moneyMinor = minorFromRupees(mrp); const selected = <T extends { _id: string }>(items: T[], value: string) => items.find((entry) => entry._id === value);
   const basicValid = Boolean(name.trim() && categoryId && subCategoryId && fitId && fabricId && moneyMinor !== null);

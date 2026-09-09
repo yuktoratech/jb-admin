@@ -9,11 +9,11 @@ export interface ProductColourWithSkus extends ProductColour { colour: Colour; s
 export interface ProductDetailData { product: Product; productColours: ProductColourWithSkus[]; }
 export interface ProductListData { products: Product[]; pagination: Pagination; }
 export interface ProductListParams { page?: number; limit?: number; search?: string; categoryId?: string; subCategoryId?: string; status?: CatalogStatus | ""; }
-export interface CreateSkuInput { sizeSetId: string; sku?: string; status?: CatalogStatus; }
+export interface CreateSkuInput { sizeSetId: string; status?: CatalogStatus; }
 export interface CreateProductColourInput { colourId: string; productCode: string; status?: CatalogStatus; skus: CreateSkuInput[]; }
 export interface ProductPayload { name: string; description?: string; categoryId: string; subCategoryId: string; fitId: string; fabricId: string; mrpPerPieceMinor: number; status?: CatalogStatus; productColours: CreateProductColourInput[]; }
 export type ProductUpdatePayload = Partial<Omit<ProductPayload, "productColours">>;
-export interface CreateVariantPayload { productColourId: string; sizeSetId: string; sku?: string; status?: CatalogStatus; }
+export interface CreateVariantPayload { productColourId: string; sizeSetId: string; status?: CatalogStatus; }
 export interface UpdateVariantPayload { status: CatalogStatus; }
 export interface ProductColourPayload { productId: string; colourId: string; productCode: string; status?: CatalogStatus; }
 export interface ProductColourListParams { page?: number; limit?: number; productId?: string; colourId?: string; status?: CatalogStatus | ""; }

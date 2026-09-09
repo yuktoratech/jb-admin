@@ -16,6 +16,7 @@ import type { Category } from "@/features/categories/category.types";
 import { subCategoryApi } from "@/features/catalog/catalog.api";
 import type { CatalogStatus, SubCategory, SubCategoryPayload } from "@/features/catalog/catalog.types";
 import { getApiErrorMessage, getApiFieldErrors } from "@/lib/api";
+import { collectAllPages } from "@/lib/pagination";
 import { formatDate } from "@/lib/utils";
 import type { Pagination as PaginationData } from "@/types/api";
 
@@ -25,7 +26,7 @@ const parentCategory = (record: SubCategory) => typeof record.category === "stri
 export default function SubCategoriesPage() {
   const [records,setRecords]=useState<SubCategory[]>([]); const [categories,setCategories]=useState<Category[]>([]); const [pagination,setPagination]=useState(initialPagination); const [page,setPage]=useState(1); const [search,setSearch]=useState(""); const [query,setQuery]=useState(""); const [categoryId,setCategoryId]=useState(""); const [status,setStatus]=useState<CatalogStatus|"">(""); const [loading,setLoading]=useState(true); const [error,setError]=useState<string|null>(null); const [feedback,setFeedback]=useState<string|null>(null); const [editing,setEditing]=useState<SubCategory|null>(null); const [formOpen,setFormOpen]=useState(false); const [deactivating,setDeactivating]=useState<SubCategory|null>(null); const [pending,setPending]=useState(false); const [reload,setReload]=useState(0);
   useEffect(()=>{const id=window.setTimeout(()=>{setQuery(search.trim());setPage(1)},300);return()=>window.clearTimeout(id)},[search]);
-  useEffect(()=>{categoryApi.list({page:1,limit:100,status:"active"}).then(data=>setCategories(data.categories)).catch(reason=>setError(getApiErrorMessage(reason,"Unable to load active categories.")))},[]);
+  useEffect(()=>{collectAllPages({fetchPage:(page,limit)=>categoryApi.list({page,limit,status:"active"}),getItems:data=>data.categories}).then(setCategories).catch(reason=>setError(getApiErrorMessage(reason,"Unable to load active categories.")))},[]);
   useEffect(()=>{let active=true;subCategoryApi.list({page,limit:20,search:query||undefined,categoryId:categoryId||undefined,status}).then(data=>{if(active){setRecords(data.subCategories);setPagination(data.pagination);setError(null)}}).catch(reason=>{if(active)setError(getApiErrorMessage(reason,"Unable to load sub-categories."))}).finally(()=>{if(active)setLoading(false)});return()=>{active=false}},[categoryId,page,query,reload,status]);
   const deactivate=async()=>{if(!deactivating)return;setPending(true);try{await subCategoryApi.deactivate(deactivating._id);setFeedback("Sub-category deactivated successfully.");setDeactivating(null);setReload(v=>v+1)}catch(reason){setError(getApiErrorMessage(reason,"Unable to deactivate sub-category."));setDeactivating(null)}finally{setPending(false)}};
   const activate=async(record:SubCategory)=>{try{await subCategoryApi.update(record._id,{status:"active"});setFeedback("Sub-category activated successfully.");setReload(v=>v+1)}catch(reason){setError(getApiErrorMessage(reason,"Unable to activate sub-category."))}};

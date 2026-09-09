@@ -10,6 +10,7 @@ export interface OrderItemChange { orderItemId: string; skuId: string; sku: stri
 export interface OrderHistoryEntry { _id: string; type: "CREATED" | "WHOLESALER_ACCEPTED" | "WHOLESALER_ADJUSTED" | "ADMIN_ADJUSTED" | "RETAILER_CANCELLED" | "WHOLESALER_CANCELLED" | "ADMIN_CANCELLED" | "ADMIN_CONFIRMED"; performedBy: string | OrderParty; performedByRole: OrderParty["role"]; timestamp: string; previousStatus: OrderStatus | null; newStatus: OrderStatus; reason?: string; itemChanges: OrderItemChange[]; }
 export interface Order extends OrderPricingSnapshot { _id: string; orderNumber: string; sourceRole: OrderSourceRole; placedBy: string | OrderParty; wholesaler: string | OrderParty; retailer: string | OrderParty | null; status: OrderStatus; items: OrderItem[]; deliveryAddress: DeliveryAddressSnapshot; confirmedBy?: string | OrderParty; confirmedAt?: string; cancelledBy?: OrderParty["role"]; cancellationReason?: string; history: OrderHistoryEntry[]; createdAt: string; updatedAt: string; }
 export interface OrderListData { orders: Order[]; pagination: Pagination; }
+export interface OrderMetrics { total: number; pendingAdmin: number; confirmed: number; cancelled: number; }
 export interface OrderListParams { page?: number; limit?: number; search?: string; status?: OrderStatus | ""; sourceRole?: OrderSourceRole | ""; wholesalerId?: string; retailerId?: string; }
 export interface AdminOrderAdjustmentPayload { items: Array<{ orderItemId: string; setQuantity: number }>; }
 export interface CancelOrderPayload { reason?: string; }

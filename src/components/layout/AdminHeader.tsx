@@ -23,11 +23,21 @@ function getPageTitle(pathname: string): string {
   if (pathname === "/fits") return "Fits";
   if (pathname === "/fabrics") return "Fabrics";
   if (pathname === "/products/new") return "Add Product";
+  if (pathname === "/products/new/manual") return "Manual Product Entry";
+  if (pathname === "/products/import") return "Product Import";
   if (pathname.endsWith("/edit") && pathname.startsWith("/products/")) return "Edit Product";
   if (pathname.startsWith("/products/")) return "Product Details";
   if (pathname === "/products") return "Products";
+  if (pathname === "/inventory/import") return "Stock Upload";
   if (pathname.startsWith("/inventory/")) return "Inventory Details";
   if (pathname === "/inventory") return "Inventory";
+  if (pathname === "/orders") return "Orders";
+  if (pathname.startsWith("/orders/")) return "Order Details";
+  if (pathname === "/wholesalers/new") return "Add Wholesaler";
+  if (pathname === "/wholesalers") return "Wholesalers";
+  if (pathname.startsWith("/wholesalers/")) return "Wholesaler Details";
+  if (pathname === "/retailers") return "Retailers";
+  if (pathname.startsWith("/retailers/")) return "Retailer Details";
   return "Administration";
 }
 

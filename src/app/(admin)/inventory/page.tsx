@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
 import { Badge } from "@/components/ui/Badge";
@@ -18,6 +19,7 @@ import type { InventoryListItem, InventoryStockStatus } from "@/features/invento
 import { productApi } from "@/features/products/product.api";
 import type { Product } from "@/features/products/product.types";
 import { getApiErrorMessage } from "@/lib/api";
+import { collectAllPages } from "@/lib/pagination";
 import { formatDateTime } from "@/lib/utils";
 import type { Pagination as PaginationData } from "@/types/api";
 
@@ -26,6 +28,7 @@ const emptyPagination: PaginationData = { page: 1, limit: PAGE_SIZE, total: 0, t
 const actionLinkClass = "inline-flex h-9 items-center rounded-md px-2.5 text-xs font-semibold text-neutral-700 hover:bg-neutral-100 hover:text-black focus:outline-none focus-visible:ring-2 focus-visible:ring-[#7A1F2B]/30";
 
 export default function InventoryPage() {
+  const searchParams = useSearchParams();
   const [records, setRecords] = useState<InventoryListItem[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
@@ -37,7 +40,10 @@ export default function InventoryPage() {
   const [debouncedSku, setDebouncedSku] = useState("");
   const [product, setProduct] = useState("");
   const [category, setCategory] = useState("");
-  const [stockStatus, setStockStatus] = useState<InventoryStockStatus | "">("");
+  const [stockStatus, setStockStatus] = useState<InventoryStockStatus | "">(() => {
+    const requested = searchParams.get("stockStatus");
+    return requested === "in_stock" || requested === "out_of_stock" ? requested : "";
+  });
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [optionsWarning, setOptionsWarning] = useState<string | null>(null);
@@ -55,14 +61,14 @@ export default function InventoryPage() {
   useEffect(() => {
     let active = true;
     void Promise.allSettled([
-      categoryApi.list({ page: 1, limit: 100 }),
-      productApi.list({ page: 1, limit: 100 }),
+      collectAllPages({ fetchPage: (page, limit) => categoryApi.list({ page, limit }), getItems: (data) => data.categories }),
+      collectAllPages({ fetchPage: (page, limit) => productApi.list({ page, limit }), getItems: (data) => data.products }),
     ]).then(([categoryResult, productResult]) => {
       if (!active) return;
       const failures: string[] = [];
-      if (categoryResult.status === "fulfilled") setCategories(categoryResult.value.categories);
+      if (categoryResult.status === "fulfilled") setCategories(categoryResult.value);
       else failures.push("category");
-      if (productResult.status === "fulfilled") setProducts(productResult.value.products);
+      if (productResult.status === "fulfilled") setProducts(productResult.value);
       else failures.push("product");
       setOptionsWarning(failures.length ? `Some ${failures.join(" and ")} filter options could not be loaded.` : null);
     });

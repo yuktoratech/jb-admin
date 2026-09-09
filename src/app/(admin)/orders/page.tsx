@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
@@ -12,7 +12,7 @@ import { Select } from "@/components/ui/Select";
 import { EmptyState, ErrorState, LoadingState } from "@/components/ui/StateDisplay";
 import { Table, type TableColumn } from "@/components/ui/Table";
 import { orderApi } from "@/features/orders/order.api";
-import type { Order, OrderSourceRole, OrderStatus } from "@/features/orders/order.types";
+import type { Order, OrderMetrics, OrderSourceRole, OrderStatus } from "@/features/orders/order.types";
 import { getApiErrorMessage } from "@/lib/api";
 import { formatDateTime, formatMinorCurrency } from "@/lib/utils";
 import type { Pagination as PaginationData } from "@/types/api";
@@ -30,6 +30,8 @@ export default function OrdersPage() {
   const [sourceRole, setSourceRole] = useState<OrderSourceRole | "">("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [metrics, setMetrics] = useState<OrderMetrics | null>(null);
+  const [metricsError, setMetricsError] = useState<string | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
@@ -49,7 +51,14 @@ export default function OrdersPage() {
     return () => { active = false; };
   }, [debouncedSearch, page, reloadKey, sourceRole, status]);
 
-  const metrics = useMemo(() => ({ pending: orders.filter((order) => order.status === "PENDING_ADMIN").length, confirmed: orders.filter((order) => order.status === "CONFIRMED").length, cancelled: orders.filter((order) => order.status === "CANCELLED").length }), [orders]);
+  useEffect(() => {
+    let active = true;
+    void orderApi.metrics()
+      .then((data) => { if (active) { setMetrics(data); setMetricsError(null); } })
+      .catch((requestError) => { if (active) setMetricsError(getApiErrorMessage(requestError, "Unable to load order totals.")); });
+    return () => { active = false; };
+  }, [reloadKey]);
+
   const columns: Array<TableColumn<Order>> = [
     { key: "number", header: "Order ID", className: "min-w-44", render: (order) => <Link className="font-semibold text-[#7A1F2B] hover:underline" href={`/orders/${order._id}`}>{order.orderNumber}</Link> },
     { key: "placedBy", header: "Placed By", render: (order) => partyName(order.placedBy) },
@@ -65,11 +74,12 @@ export default function OrdersPage() {
 
   return <div className="mx-auto w-full max-w-[1600px]">
     <PageHeader title="Orders" description="Review Wholesaler and Retailer orders, preserved pricing snapshots, and final Admin actions." />
+    {metricsError ? <div role="alert" className="mb-4 border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">{metricsError}</div> : null}
     <section className="mb-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-      <Metric label="Orders on this page" value={orders.length} />
-      <Metric label="Pending Admin" value={metrics.pending} accent />
-      <Metric label="Confirmed" value={metrics.confirmed} />
-      <Metric label="Cancelled" value={metrics.cancelled} />
+      <Metric label="Total Orders" value={metrics?.total} />
+      <Metric label="Pending Admin" value={metrics?.pendingAdmin} accent />
+      <Metric label="Confirmed" value={metrics?.confirmed} />
+      <Metric label="Cancelled" value={metrics?.cancelled} />
     </section>
     <section className="overflow-hidden rounded-lg border border-neutral-200 bg-white">
       <div className="grid gap-3 border-b border-neutral-200 p-4 md:grid-cols-[minmax(260px,1fr)_230px_220px_auto]">
@@ -83,6 +93,6 @@ export default function OrdersPage() {
   </div>;
 }
 
-function Metric({ label, value, accent = false }: { label: string; value: number; accent?: boolean }) { return <div className="rounded-lg border border-neutral-200 bg-white p-5"><p className="text-xs font-medium uppercase tracking-wide text-neutral-500">{label}</p><p className={`mt-2 text-3xl font-semibold ${accent ? "text-[#7A1F2B]" : "text-neutral-950"}`}>{value}</p></div>; }
+function Metric({ label, value, accent = false }: { label: string; value?: number; accent?: boolean }) { return <div className="rounded-lg border border-neutral-200 bg-white p-5"><p className="text-xs font-medium uppercase tracking-wide text-neutral-500">{label}</p><p className={`mt-2 text-3xl font-semibold ${accent ? "text-[#7A1F2B]" : "text-neutral-950"}`}>{value === undefined ? "—" : value.toLocaleString("en-IN")}</p></div>; }
 function partyName(party: Order["placedBy"] | Order["retailer"]): string { if (!party) return "—"; return typeof party === "string" ? party : party.name; }
-export function StatusBadge({ status }: { status: OrderStatus }) { const tone = status === "CONFIRMED" ? "active" : status === "CANCELLED" ? "inactive" : status === "PENDING_ADMIN" ? "maroon" : "warning"; return <Badge tone={tone}>{status.replaceAll("_", " ")}</Badge>; }
+function StatusBadge({ status }: { status: OrderStatus }) { const tone = status === "CONFIRMED" ? "active" : status === "CANCELLED" ? "inactive" : status === "PENDING_ADMIN" ? "maroon" : "warning"; return <Badge tone={tone}>{status.replaceAll("_", " ")}</Badge>; }
