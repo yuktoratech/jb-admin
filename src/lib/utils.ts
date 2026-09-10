@@ -73,7 +73,13 @@ export function normalizeSkuPart(value: string): string {
 }
 
 export function previewGeneratedSku(productCode: string, sizeSetLabel: string): string {
-  const code = productCode.normalize("NFKD").replace(/[\u0300-\u036f]/g, "").trim().toLowerCase().replace(/\s+/g, "_").replace(/_+/g, "_").replace(/[^a-z0-9_]/g, "").replace(/^_+|_+$/g, "");
-  const size = sizeSetLabel.normalize("NFKD").replace(/[\u0300-\u036f]/g, "").trim().toLowerCase().replace(/\s*-\s*/g, "-").replace(/\s+/g, "").replace(/-+/g, "-").replace(/[^a-z0-9-]/g, "").replace(/^-+|-+$/g, "");
+  const code = productCode.normalize("NFKD").replace(/[\u0300-\u036f]/g, "").trim().toUpperCase().replace(/\s+/g, "_").replace(/_+/g, "_").replace(/[^A-Z0-9_]/g, "").replace(/^_+|_+$/g, "");
+  const size = sizeSetLabel.normalize("NFKD").replace(/[\u0300-\u036f]/g, "").trim().toUpperCase().replace(/\s*-\s*/g, "-").replace(/\s+/g, "").replace(/-+/g, "-").replace(/[^A-Z0-9-]/g, "").replace(/^-+|-+$/g, "");
   return code && size ? `${code}_${size}` : "";
+}
+
+export function previewGeneratedProductCode(productName: string, colourName: string): string {
+  const part = (value: string) => value.normalize("NFKD").replace(/[\u0300-\u036f]/g, "").trim().toUpperCase().replace(/[^A-Z0-9]+/g, "_").replace(/_+/g, "_").replace(/^_+|_+$/g, "");
+  const product = part(productName); const colour = part(colourName);
+  return product && colour ? `${product}_${colour}` : "";
 }

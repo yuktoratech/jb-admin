@@ -2,7 +2,7 @@ import { api } from "@/lib/api";
 import { buildQueryString } from "@/lib/utils";
 import type { ApiResponse } from "@/types/api";
 import type { InventoryDetail, InventoryImportBatch, InventoryListData, InventoryListParams, InventoryTransactionListData, InventoryTransactionListParams } from "./inventory.types";
-export const INVENTORY_IMPORT_COLUMNS = ["SKU", "TYPE", "QUANTITY", "SHELF", "TO SHELF"] as const;
+export const INVENTORY_IMPORT_COLUMNS = ["SKU", "QTY", "SHELF", "ADJUSTMENT TYPE", "TO SHELF"] as const;
 export const inventoryApi = {
   list: async (params: InventoryListParams = {}) => (await api.get<ApiResponse<InventoryListData>>(`/inventory${buildQueryString(params)}`)).data,
   getByVariantId: async (id: string) => (await api.get<ApiResponse<InventoryDetail>>(`/inventory/${encodeURIComponent(id)}`)).data,

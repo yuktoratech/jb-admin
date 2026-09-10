@@ -100,7 +100,7 @@ export default function CategoriesPage() {
 
   const columns: Array<TableColumn<Category>> = [
     { key: "name", header: "Name", render: (category) => <span className="font-semibold text-neutral-950">{category.name}</span> },
-    { key: "slug", header: "Slug", render: (category) => <span className="font-mono text-xs text-neutral-600">{category.slug}</span> },
+    { key: "sizeFamily", header: "Size family", render: (category) => category.sizeFamily ? <Badge tone="active">{category.sizeFamily}</Badge> : <Badge tone="warning">Requires setup</Badge> },
     { key: "description", header: "Description", className: "min-w-64 max-w-md", render: (category) => <span className="line-clamp-2 text-neutral-600">{category.description || "—"}</span> },
     { key: "status", header: "Status", render: (category) => <Badge tone={category.status === "active" ? "active" : "inactive"}>{category.status}</Badge> },
     { key: "createdAt", header: "Created", render: (category) => <span className="whitespace-nowrap">{formatDate(category.createdAt)}</span> },
