@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 
 type AdminSidebarProps = {
   isOpen: boolean;
@@ -32,6 +32,16 @@ const navigationSections: Array<{
             <rect x="14" y="3" width="7" height="7" rx="1" />
             <rect x="3" y="14" width="7" height="7" rx="1" />
             <rect x="14" y="14" width="7" height="7" rx="1" />
+          </svg>
+        ),
+      },
+      {
+        label: "Products",
+        href: "/products",
+        icon: (
+          <svg className={iconClass} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
+            <path d="m5 7 7-4 7 4v10l-7 4-7-4V7Z" />
+            <path d="m5 7 7 4 7-4M12 11v10" />
           </svg>
         ),
       },
@@ -75,16 +85,6 @@ const navigationSections: Array<{
         href: "/fabrics",
         icon: <svg className={iconClass} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true"><path d="m4 7 8-4 8 4-8 4-8-4Zm0 5 8 4 8-4M4 17l8 4 8-4" /></svg>,
       },
-      {
-        label: "Products",
-        href: "/products",
-        icon: (
-          <svg className={iconClass} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
-            <path d="m5 7 7-4 7 4v10l-7 4-7-4V7Z" />
-            <path d="m5 7 7 4 7-4M12 11v10" />
-          </svg>
-        ),
-      },
     ],
   },
   {
@@ -124,6 +124,8 @@ const navigationSections: Array<{
 
 export function AdminSidebar({ isOpen, onClose }: AdminSidebarProps) {
   const pathname = usePathname();
+  const isCatalogRoute = navigationSections.find((section) => section.label === "Catalog")?.items.some((item) => pathname === item.href || pathname.startsWith(`${item.href}/`)) ?? false;
+  const [isCatalogOpen, setIsCatalogOpen] = useState(isCatalogRoute);
 
   return (
     <>
@@ -159,8 +161,13 @@ export function AdminSidebar({ isOpen, onClose }: AdminSidebarProps) {
         <nav className="flex-1 overflow-y-auto px-3 py-5">
           {navigationSections.map((section, sectionIndex) => (
             <div key={section.label ?? "overview"} className={sectionIndex === 0 ? "" : "mt-7"}>
-              {section.label ? <p className="mb-2 px-3 text-[10px] font-semibold uppercase tracking-[0.18em] text-neutral-500">{section.label}</p> : null}
-              <ul className="space-y-1">
+              {section.label === "Catalog" ? (
+                <button type="button" aria-expanded={isCatalogOpen} aria-controls="catalog-navigation" onClick={() => setIsCatalogOpen((open) => !open)} className={`mb-2 flex h-10 w-full items-center justify-between rounded-md px-3 text-sm font-semibold transition-colors ${isCatalogRoute ? "text-white" : "text-neutral-400 hover:bg-neutral-900 hover:text-white"}`}>
+                  <span>Catalog</span>
+                  <svg className={`h-4 w-4 transition-transform ${isCatalogOpen ? "rotate-180" : ""}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>
+                </button>
+              ) : section.label ? <p className="mb-2 px-3 text-[10px] font-semibold uppercase tracking-[0.18em] text-neutral-500">{section.label}</p> : null}
+              <ul id={section.label === "Catalog" ? "catalog-navigation" : undefined} className={`space-y-1 ${section.label === "Catalog" && !isCatalogOpen ? "hidden" : ""}`}>
                 {section.items.map((item) => {
                   const isInventoryIndex = item.href === "/inventory";
                   const isActive = pathname === item.href || (item.href !== "/dashboard" && (!isInventoryIndex || !pathname.startsWith("/inventory/import")) && pathname.startsWith(`${item.href}/`));

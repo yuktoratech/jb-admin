@@ -40,7 +40,6 @@ export default function ProductsPage() {
   const [error, setError] = useState<string | null>(null);
   const [reload, setReload] = useState(0);
   const [target, setTarget] = useState<Product | null>(null);
-  const [permanentTarget, setPermanentTarget] = useState<Product | null>(null);
   const [working, setWorking] = useState(false);
   useEffect(() => {
     collectAllPages({
@@ -103,22 +102,6 @@ export default function ProductsPage() {
     } catch (reason) {
       setError(getApiErrorMessage(reason, "Unable to change Product status."));
       setTarget(null);
-    } finally {
-      setWorking(false);
-    }
-  };
-  const permanentlyDelete = async () => {
-    if (!permanentTarget) return;
-    setWorking(true);
-    try {
-      await productApi.permanentlyDelete(permanentTarget._id);
-      setPermanentTarget(null);
-      setReload((value) => value + 1);
-    } catch (reason) {
-      setError(
-        getApiErrorMessage(reason, "Unable to permanently delete Product."),
-      );
-      setPermanentTarget(null);
     } finally {
       setWorking(false);
     }
@@ -188,13 +171,6 @@ export default function ProductsPage() {
           </Link>
           <Button size="sm" variant="ghost" onClick={() => setTarget(item)}>
             {item.status === "active" ? "Deactivate" : "Activate"}
-          </Button>
-          <Button
-            size="sm"
-            variant="danger"
-            onClick={() => setPermanentTarget(item)}
-          >
-            Delete Permanently
           </Button>
         </div>
       ),
@@ -316,16 +292,6 @@ export default function ProductsPage() {
         isConfirming={working}
         onClose={() => !working && setTarget(null)}
         onConfirm={changeStatus}
-      />
-      <ConfirmDialog
-        isOpen={Boolean(permanentTarget)}
-        title="Permanently delete this product?"
-        description="This action cannot be undone. Permanent deletion is only allowed when the product has no inventory or order history."
-        confirmLabel="Delete Permanently"
-        tone="danger"
-        isConfirming={working}
-        onClose={() => !working && setPermanentTarget(null)}
-        onConfirm={() => void permanentlyDelete()}
       />
     </div>
   );
