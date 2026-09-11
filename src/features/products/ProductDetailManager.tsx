@@ -2,6 +2,7 @@
 /* eslint-disable react-hooks/set-state-in-effect, @next/next/no-img-element, @typescript-eslint/no-unused-vars */
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
@@ -20,16 +21,615 @@ import { productApi, productColourApi } from "./product.api";
 import type { ProductColourWithSkus, ProductDetailData } from "./product.types";
 
 export function ProductDetailManager({ productId }: { productId: string }) {
-  const [data, setData] = useState<ProductDetailData | null>(null); const [error, setError] = useState<string | null>(null); const [loading, setLoading] = useState(true); const [reload, setReload] = useState(0); const [colourModal, setColourModal] = useState(false); const [skuColour, setSkuColour] = useState<ProductColourWithSkus | null>(null); const [confirm, setConfirm] = useState<{ title: string; description: string; action: () => Promise<unknown> } | null>(null); const [working, setWorking] = useState(false);
-  useEffect(() => { let active = true; setLoading(true); productApi.get(productId).then((value) => { if (active) { setData(value); setError(null); } }).catch((reason) => { if (active) setError(getApiErrorMessage(reason, "Unable to load Product.")); }).finally(() => { if (active) setLoading(false); }); return () => { active = false; }; }, [productId, reload]);
+  const router = useRouter();
+  const [data, setData] = useState<ProductDetailData | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [reload, setReload] = useState(0);
+  const [colourModal, setColourModal] = useState(false);
+  const [skuColour, setSkuColour] = useState<ProductColourWithSkus | null>(
+    null,
+  );
+  const [confirm, setConfirm] = useState<{
+    title: string;
+    description: string;
+    action: () => Promise<unknown>;
+    tone?: "primary" | "danger";
+    confirmLabel?: string;
+  } | null>(null);
+  const [working, setWorking] = useState(false);
+  useEffect(() => {
+    let active = true;
+    setLoading(true);
+    productApi
+      .get(productId)
+      .then((value) => {
+        if (active) {
+          setData(value);
+          setError(null);
+        }
+      })
+      .catch((reason) => {
+        if (active)
+          setError(getApiErrorMessage(reason, "Unable to load Product."));
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, [productId, reload]);
   const refresh = () => setReload((value) => value + 1);
-  const runConfirmed = async () => { if (!confirm) return; setWorking(true); setError(null); try { await confirm.action(); setConfirm(null); refresh(); } catch (reason) { setError(getApiErrorMessage(reason, "Unable to update catalog status.")); setConfirm(null); } finally { setWorking(false); } };
-  if (loading) return <LoadingState label="Loading Product" />; if (!data) return <ErrorState message={error ?? "Product data is unavailable."} onRetry={refresh} />;
+  const runConfirmed = async () => {
+    if (!confirm) return;
+    setWorking(true);
+    setError(null);
+    try {
+      await confirm.action();
+      setConfirm(null);
+      refresh();
+    } catch (reason) {
+      setError(getApiErrorMessage(reason, "Unable to update catalog status."));
+      setConfirm(null);
+    } finally {
+      setWorking(false);
+    }
+  };
+  if (loading) return <LoadingState label="Loading Product" />;
+  if (!data)
+    return (
+      <ErrorState
+        message={error ?? "Product data is unavailable."}
+        onRetry={refresh}
+      />
+    );
   const { product, productColours } = data;
-  return <div className="mx-auto w-full max-w-[1500px]"><PageHeader title={product.name} description="Finalized Product, colour-level images and immutable SKU structure." actions={<><Link href="/products"><Button variant="secondary">Back to Products</Button></Link><Link href={`/products/${productId}/edit`}><Button>Edit Product</Button></Link></>} />{error ? <div className="mb-5 rounded-md bg-red-50 p-3 text-sm text-red-800">{error}</div> : null}<section className="grid gap-5 rounded-xl border bg-white p-6 md:grid-cols-2 lg:grid-cols-4"><Info label="Category" value={product.category.name} /><Info label="Sub-category" value={product.subCategory.name} /><Info label="Fit" value={product.fitId.name} /><Info label="Fabric" value={product.fabricId.name} /><Info label="MRP per piece" value={formatMinorCurrency(product.mrpPerPieceMinor)} /><Info label="Status" value={product.status} /><Info label="Created" value={formatDate(product.createdAt)} /><Info label="Updated" value={formatDate(product.updatedAt)} /><div className="md:col-span-2 lg:col-span-4"><Info label="Description" value={product.description || "No description"} /></div></section><div className="mt-7 flex items-center justify-between"><div><h2 className="text-xl font-semibold">Product Colours</h2><p className="mt-1 text-sm text-neutral-500">Each colour owns its images and Size Set SKUs.</p></div><Button onClick={() => setColourModal(true)}>Add Product Colour</Button></div><div className="mt-4 space-y-5">{productColours.map((entry) => <ColourCard key={entry._id} entry={entry} productId={productId} refresh={refresh} setError={setError} addSku={() => setSkuColour(entry)} confirm={setConfirm} />)}{!productColours.length ? <div className="rounded-xl border border-dashed bg-white p-10 text-center text-sm text-neutral-500">No Product Colours.</div> : null}</div><AddColourModal open={colourModal} onClose={() => setColourModal(false)} productId={productId} existing={productColours.map((entry) => entry.colour._id)} onCreated={() => { setColourModal(false); refresh(); }} /><AddSkuModal colour={skuColour} productId={productId} onClose={() => setSkuColour(null)} onCreated={() => { setSkuColour(null); refresh(); }} /><ConfirmDialog isOpen={Boolean(confirm)} title={confirm?.title ?? "Confirm"} description={confirm?.description ?? ""} onClose={() => !working && setConfirm(null)} onConfirm={runConfirmed} isConfirming={working} /></div>;
+  return (
+    <div className="mx-auto w-full max-w-[1500px]">
+      <PageHeader
+        title={product.name}
+        description="Finalized Product, colour-level images and immutable SKU structure."
+        actions={
+          <>
+            <Link href="/products">
+              <Button variant="secondary">Back to Products</Button>
+            </Link>
+            <Link href={`/products/${productId}/edit`}>
+              <Button>Edit Product</Button>
+            </Link>
+            <Button
+              variant="danger"
+              onClick={() =>
+                setConfirm({
+                  title: "Permanently delete this product?",
+                  description:
+                    "This action cannot be undone. Permanent deletion is only allowed when the product has no inventory or order history.",
+                  tone: "danger",
+                  confirmLabel: "Delete Permanently",
+                  action: async () => {
+                    await productApi.permanentlyDelete(productId);
+                    router.push("/products");
+                  },
+                })
+              }
+            >
+              Delete Permanently
+            </Button>
+          </>
+        }
+      />
+      {error ? (
+        <div className="mb-5 rounded-md bg-red-50 p-3 text-sm text-red-800">
+          {error}
+        </div>
+      ) : null}
+      <section className="grid gap-5 rounded-xl border bg-white p-6 md:grid-cols-2 lg:grid-cols-4">
+        <Info label="Category" value={product.category.name} />
+        <Info label="Sub-category" value={product.subCategory.name} />
+        <Info label="Fit" value={product.fitId.name} />
+        <Info label="Fabric" value={product.fabricId.name} />
+        <Info
+          label="MRP per piece"
+          value={formatMinorCurrency(product.mrpPerPieceMinor)}
+        />
+        <Info label="Status" value={product.status} />
+        <Info label="Created" value={formatDate(product.createdAt)} />
+        <Info label="Updated" value={formatDate(product.updatedAt)} />
+        <div className="md:col-span-2 lg:col-span-4">
+          <Info
+            label="Description"
+            value={product.description || "No description"}
+          />
+        </div>
+      </section>
+      <div className="mt-7 flex items-center justify-between">
+        <div>
+          <h2 className="text-xl font-semibold">Product Colours</h2>
+          <p className="mt-1 text-sm text-neutral-500">
+            Each colour owns its images and Size Set SKUs.
+          </p>
+        </div>
+        <Button onClick={() => setColourModal(true)}>Add Product Colour</Button>
+      </div>
+      <div className="mt-4 space-y-5">
+        {productColours.map((entry) => (
+          <ColourCard
+            key={entry._id}
+            entry={entry}
+            productId={productId}
+            refresh={refresh}
+            setError={setError}
+            addSku={() => setSkuColour(entry)}
+            confirm={setConfirm}
+          />
+        ))}
+        {!productColours.length ? (
+          <div className="rounded-xl border border-dashed bg-white p-10 text-center text-sm text-neutral-500">
+            No Product Colours.
+          </div>
+        ) : null}
+      </div>
+      <AddColourModal
+        open={colourModal}
+        onClose={() => setColourModal(false)}
+        productId={productId}
+        existing={productColours.map((entry) => entry.colour._id)}
+        onCreated={() => {
+          setColourModal(false);
+          refresh();
+        }}
+      />
+      <AddSkuModal
+        colour={skuColour}
+        productId={productId}
+        onClose={() => setSkuColour(null)}
+        onCreated={() => {
+          setSkuColour(null);
+          refresh();
+        }}
+      />
+      <ConfirmDialog
+        isOpen={Boolean(confirm)}
+        title={confirm?.title ?? "Confirm"}
+        description={confirm?.description ?? ""}
+        confirmLabel={confirm?.confirmLabel}
+        tone={confirm?.tone}
+        onClose={() => !working && setConfirm(null)}
+        onConfirm={runConfirmed}
+        isConfirming={working}
+      />
+    </div>
+  );
 }
-function ColourCard({ entry, productId, refresh, setError, addSku, confirm }: { entry: ProductColourWithSkus; productId: string; refresh: () => void; setError: (value: string | null) => void; addSku: () => void; confirm: (value: { title: string; description: string; action: () => Promise<unknown> }) => void }) { const input = useRef<HTMLInputElement>(null); const [uploading, setUploading] = useState(false); const upload = async (file?: File) => { if (!file) return; setUploading(true); setError(null); try { await productColourApi.uploadImage(entry._id, file); refresh(); } catch (reason) { setError(getApiErrorMessage(reason, "Unable to upload colour image.")); } finally { setUploading(false); if (input.current) input.current.value = ""; } }; const move = async (index: number, direction: -1 | 1) => { const next = [...entry.images]; const target = index + direction; if (target < 0 || target >= next.length) return; [next[index], next[target]] = [next[target], next[index]]; try { await productColourApi.reorderImages(entry._id, next.map((image) => image._id)); refresh(); } catch (reason) { setError(getApiErrorMessage(reason, "Unable to reorder images.")); } }; return <section className="rounded-xl border bg-white"><header className="flex flex-wrap items-center justify-between gap-3 border-b p-5"><div><h3 className="text-lg font-semibold">{entry.colour.name} <code className="ml-2 text-sm font-normal text-neutral-500">{entry.productCode}</code></h3><Badge tone={entry.status === "active" ? "active" : "inactive"}>{entry.status}</Badge></div><div className="flex gap-2"><Button size="sm" variant="secondary" onClick={addSku}>Add Size Set SKU</Button><Button size="sm" variant="secondary" onClick={() => confirm({ title: entry.status === "active" ? "Delete this colour?" : "Activate Product Colour?", description: entry.status === "active" ? "This will hide it from future orders. Existing order history will remain." : `Activate ${entry.colour.name}?`, action: () => productColourApi.updateStatus(entry._id, entry.status === "active" ? "inactive" : "active") })}>{entry.status === "active" ? "Delete" : "Activate"}</Button></div></header><div className="grid gap-6 p-5 lg:grid-cols-[.9fr_1.1fr]"><div><div className="flex items-center justify-between"><h4 className="font-semibold">Colour images</h4><><input ref={input} className="hidden" type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => upload(event.target.files?.[0])} /><Button size="sm" isLoading={uploading} onClick={() => input.current?.click()}>Upload image</Button></></div><div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3">{entry.images.map((image, index) => <div key={image._id} className="overflow-hidden rounded-lg border"><img src={image.url} alt={image.altText || `${entry.colour.name} Product`} className="aspect-square w-full object-cover" /><div className="flex justify-center gap-1 p-2"><Button size="sm" variant="ghost" disabled={index === 0} onClick={() => move(index, -1)}>←</Button><Button size="sm" variant="ghost" disabled={index === entry.images.length - 1} onClick={() => move(index, 1)}>→</Button><Button size="sm" variant="ghost" onClick={() => confirm({ title: "Delete colour image?", description: "The image object and ProductColour metadata will be removed.", action: () => productColourApi.deleteImage(entry._id, image._id) })}>Delete</Button></div></div>)}{!entry.images.length ? <div className="col-span-full rounded-lg border border-dashed p-8 text-center text-sm text-neutral-500">No images for this colour.</div> : null}</div></div><div><h4 className="font-semibold">Size Sets and immutable SKUs</h4><div className="mt-3 overflow-x-auto"><table className="w-full text-left text-sm"><thead className="bg-neutral-50 text-xs uppercase text-neutral-500"><tr><th className="p-3">Size Set</th><th className="p-3">Sizes</th><th className="p-3">SKU</th><th className="p-3">Status</th><th className="p-3">Action</th></tr></thead><tbody className="divide-y">{entry.skus.map((sku) => { const sizeSet = typeof sku.sizeSetRef === "string" ? null : sku.sizeSetRef; return <tr key={sku._id}><td className="p-3">{sizeSet?.label ?? "—"}</td><td className="p-3">{sizeSet?.sizes.join(", ") ?? "—"} {sizeSet ? `(${sizeSet.pieceCount} pcs)` : ""}</td><td className="p-3"><code>{sku.sku}</code></td><td className="p-3"><Badge tone={sku.status === "active" ? "active" : "inactive"}>{sku.status}</Badge></td><td className="p-3"><Button size="sm" variant="ghost" onClick={() => confirm({ title: `${sku.status === "active" ? "Deactivate" : "Activate"} SKU?`, description: "SKU identity remains immutable; only status changes.", action: () => productApi.updateVariant(sku._id, { status: sku.status === "active" ? "inactive" : "active" }) })}>{sku.status === "active" ? "Deactivate" : "Activate"}</Button></td></tr>; })}</tbody></table></div></div></div></section>; }
+function ColourCard({
+  entry,
+  productId,
+  refresh,
+  setError,
+  addSku,
+  confirm,
+}: {
+  entry: ProductColourWithSkus;
+  productId: string;
+  refresh: () => void;
+  setError: (value: string | null) => void;
+  addSku: () => void;
+  confirm: (value: {
+    title: string;
+    description: string;
+    action: () => Promise<unknown>;
+    tone?: "primary" | "danger";
+    confirmLabel?: string;
+  }) => void;
+}) {
+  const input = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const upload = async () => {
+    if (!selectedFiles.length) return;
+    setUploading(true);
+    setError(null);
+    try {
+      await productColourApi.uploadImages(entry._id, selectedFiles);
+      setSelectedFiles([]);
+      refresh();
+    } catch (reason) {
+      setError(getApiErrorMessage(reason, "Unable to upload colour images."));
+    } finally {
+      setUploading(false);
+      if (input.current) input.current.value = "";
+    }
+  };
+  const move = async (index: number, direction: -1 | 1) => {
+    const next = [...entry.images];
+    const target = index + direction;
+    if (target < 0 || target >= next.length) return;
+    [next[index], next[target]] = [next[target], next[index]];
+    try {
+      await productColourApi.reorderImages(
+        entry._id,
+        next.map((image) => image._id),
+      );
+      refresh();
+    } catch (reason) {
+      setError(getApiErrorMessage(reason, "Unable to reorder images."));
+    }
+  };
+  return (
+    <section className="rounded-xl border bg-white">
+      <header className="flex flex-wrap items-center justify-between gap-3 border-b p-5">
+        <div>
+          <h3 className="text-lg font-semibold">
+            {entry.colour.name}{" "}
+            <code className="ml-2 text-sm font-normal text-neutral-500">
+              {entry.productCode}
+            </code>
+          </h3>
+          <Badge tone={entry.status === "active" ? "active" : "inactive"}>
+            {entry.status}
+          </Badge>
+        </div>
+        <div className="flex gap-2">
+          <Button size="sm" variant="secondary" onClick={addSku}>
+            Add Size Set SKU
+          </Button>
+          <Button
+            size="sm"
+            variant="secondary"
+            onClick={() =>
+              confirm({
+                title:
+                  entry.status === "active"
+                    ? "Delete this colour?"
+                    : "Activate Product Colour?",
+                description:
+                  entry.status === "active"
+                    ? "This will hide it from future orders. Existing order history will remain."
+                    : `Activate ${entry.colour.name}?`,
+                action: () =>
+                  productColourApi.updateStatus(
+                    entry._id,
+                    entry.status === "active" ? "inactive" : "active",
+                  ),
+              })
+            }
+          >
+            {entry.status === "active" ? "Delete" : "Activate"}
+          </Button>
+        </div>
+      </header>
+      <div className="grid gap-6 p-5 lg:grid-cols-[.9fr_1.1fr]">
+        <div>
+          <div className="flex items-center justify-between">
+            <h4 className="font-semibold">Colour images</h4>
+            <>
+              <input
+                ref={input}
+                className="hidden"
+                type="file"
+                multiple
+                accept="image/jpeg,image/png,image/webp"
+                onChange={(event) =>
+                  setSelectedFiles(Array.from(event.target.files ?? []))
+                }
+              />
+              <Button
+                size="sm"
+                isLoading={uploading}
+                onClick={() =>
+                  selectedFiles.length ? void upload() : input.current?.click()
+                }
+              >
+                {selectedFiles.length
+                  ? `Upload ${selectedFiles.length} image${selectedFiles.length === 1 ? "" : "s"}`
+                  : "Choose images"}
+              </Button>
+            </>
+          </div>
+          <SelectedImagePreviews files={selectedFiles} />
+          <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
+            {entry.images.map((image, index) => (
+              <div
+                key={image._id}
+                className="overflow-hidden rounded-lg border"
+              >
+                <img
+                  src={image.url}
+                  alt={image.altText || `${entry.colour.name} Product`}
+                  className="aspect-square w-full object-cover"
+                />
+                <div className="flex justify-center gap-1 p-2">
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    disabled={index === 0}
+                    onClick={() => move(index, -1)}
+                  >
+                    ←
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    disabled={index === entry.images.length - 1}
+                    onClick={() => move(index, 1)}
+                  >
+                    →
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() =>
+                      confirm({
+                        title: "Delete colour image?",
+                        description:
+                          "The image object and ProductColour metadata will be removed.",
+                        action: () =>
+                          productColourApi.deleteImage(entry._id, image._id),
+                      })
+                    }
+                  >
+                    Delete
+                  </Button>
+                </div>
+              </div>
+            ))}
+            {!entry.images.length ? (
+              <div className="col-span-full rounded-lg border border-dashed p-8 text-center text-sm text-neutral-500">
+                No images for this colour.
+              </div>
+            ) : null}
+          </div>
+        </div>
+        <div>
+          <h4 className="font-semibold">Size Sets and immutable SKUs</h4>
+          <div className="mt-3 overflow-x-auto">
+            <table className="w-full text-left text-sm">
+              <thead className="bg-neutral-50 text-xs uppercase text-neutral-500">
+                <tr>
+                  <th className="p-3">Size Set</th>
+                  <th className="p-3">Sizes</th>
+                  <th className="p-3">SKU</th>
+                  <th className="p-3">Status</th>
+                  <th className="p-3">Action</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y">
+                {entry.skus.map((sku) => {
+                  const sizeSet =
+                    typeof sku.sizeSetRef === "string" ? null : sku.sizeSetRef;
+                  return (
+                    <tr key={sku._id}>
+                      <td className="p-3">{sizeSet?.label ?? "—"}</td>
+                      <td className="p-3">
+                        {sizeSet?.sizes.join(", ") ?? "—"}{" "}
+                        {sizeSet ? `(${sizeSet.pieceCount} pcs)` : ""}
+                      </td>
+                      <td className="p-3">
+                        <code>{sku.sku}</code>
+                      </td>
+                      <td className="p-3">
+                        <Badge
+                          tone={sku.status === "active" ? "active" : "inactive"}
+                        >
+                          {sku.status}
+                        </Badge>
+                      </td>
+                      <td className="p-3">
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() =>
+                            confirm({
+                              title: `${sku.status === "active" ? "Deactivate" : "Activate"} SKU?`,
+                              description:
+                                "SKU identity remains immutable; only status changes.",
+                              action: () =>
+                                productApi.updateVariant(sku._id, {
+                                  status:
+                                    sku.status === "active"
+                                      ? "inactive"
+                                      : "active",
+                                }),
+                            })
+                          }
+                        >
+                          {sku.status === "active" ? "Deactivate" : "Activate"}
+                        </Button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
 
-function AddColourModal({ open, onClose, productId, existing, onCreated }: { open: boolean; onClose: () => void; productId: string; existing: string[]; onCreated: () => void }) { const [colours, setColours] = useState<Colour[]>([]); const [colourId, setColourId] = useState(""); const [saving, setSaving] = useState(false); const [error, setError] = useState<string | null>(null); useEffect(() => { if (open) collectAllPages({ fetchPage: (page, limit) => colourApi.list({ page, limit, status: "active" }), getItems: (data) => data.colours }).then(setColours).catch((reason) => setError(getApiErrorMessage(reason, "Unable to load Colours."))); }, [open]); const save = async () => { setSaving(true); setError(null); try { await productColourApi.create({ productId, colourId }); onCreated(); setColourId(""); } catch (reason) { setError(getApiErrorMessage(reason, "Unable to add Product Colour.")); } finally { setSaving(false); } }; return <Modal isOpen={open} onClose={onClose} title="Add Product Colour" description="The backend generates the immutable Product Code." footer={<><Button variant="secondary" onClick={onClose}>Cancel</Button><Button disabled={!colourId} isLoading={saving} onClick={save}>Add Colour</Button></>}><div className="space-y-4">{error ? <p className="text-sm text-red-700">{error}</p> : null}<Select label="Colour" value={colourId} onChange={(event) => setColourId(event.target.value)}><option value="">Select Colour</option>{colours.map((colour) => <option key={colour._id} disabled={existing.includes(colour._id)} value={colour._id}>{colour.name}</option>)}</Select></div></Modal>; }
-function AddSkuModal({ colour, productId, onClose, onCreated }: { colour: ProductColourWithSkus | null; productId: string; onClose: () => void; onCreated: () => void }) { const [size, setSize] = useState(""); const [saving, setSaving] = useState(false); const [error, setError] = useState<string | null>(null); const save = async () => { if (!colour) return; setSaving(true); try { await productApi.createVariant(productId, { productColourId: colour._id, size: size.trim() }); onCreated(); setSize(""); } catch (reason) { setError(getApiErrorMessage(reason, "Unable to create SKU.")); } finally { setSaving(false); } }; return <Modal isOpen={Boolean(colour)} onClose={onClose} title="Add Size Set SKU" description="Enter a range or list. The backend creates/reuses the Size Set and generates the uppercase immutable SKU." footer={<><Button variant="secondary" onClick={onClose}>Cancel</Button><Button disabled={!size.trim()} isLoading={saving} onClick={save}>Create SKU</Button></>}><>{error ? <p className="mb-3 text-sm text-red-700">{error}</p> : null}<Input label="Size / Size Set" value={size} onChange={(event) => setSize(event.target.value.toUpperCase())} placeholder="S-XL or 30-38" /></></Modal>; }
-function Info({ label, value }: { label: string; value: string }) { return <div><p className="text-xs font-semibold uppercase tracking-wide text-neutral-500">{label}</p><p className="mt-1 text-sm font-medium text-neutral-900">{value}</p></div>; }
+function SelectedImagePreviews({ files }: { files: File[] }) {
+  const [previews, setPreviews] = useState<
+    Array<{ name: string; url: string }>
+  >([]);
+  useEffect(() => {
+    const next = files.map((file) => ({
+      name: file.name,
+      url: URL.createObjectURL(file),
+    }));
+    setPreviews(next);
+    return () => next.forEach(({ url }) => URL.revokeObjectURL(url));
+  }, [files]);
+  if (!previews.length) return null;
+  return (
+    <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3">
+      {previews.map(({ name, url }, index) => (
+        <figure
+          key={`${name}-${index}`}
+          className="rounded-lg border border-dashed p-2"
+        >
+          <img
+            src={url}
+            alt={`Selected ${name}`}
+            className="aspect-square w-full rounded object-cover"
+          />
+          <figcaption className="mt-1 truncate text-xs text-neutral-600">
+            {index + 1}. {name}
+          </figcaption>
+        </figure>
+      ))}
+    </div>
+  );
+}
+
+function AddColourModal({
+  open,
+  onClose,
+  productId,
+  existing,
+  onCreated,
+}: {
+  open: boolean;
+  onClose: () => void;
+  productId: string;
+  existing: string[];
+  onCreated: () => void;
+}) {
+  const [colours, setColours] = useState<Colour[]>([]);
+  const [colourId, setColourId] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  useEffect(() => {
+    if (open)
+      collectAllPages({
+        fetchPage: (page, limit) =>
+          colourApi.list({ page, limit, status: "active" }),
+        getItems: (data) => data.colours,
+      })
+        .then(setColours)
+        .catch((reason) =>
+          setError(getApiErrorMessage(reason, "Unable to load Colours.")),
+        );
+  }, [open]);
+  const save = async () => {
+    setSaving(true);
+    setError(null);
+    try {
+      await productColourApi.create({ productId, colourId });
+      onCreated();
+      setColourId("");
+    } catch (reason) {
+      setError(getApiErrorMessage(reason, "Unable to add Product Colour."));
+    } finally {
+      setSaving(false);
+    }
+  };
+  return (
+    <Modal
+      isOpen={open}
+      onClose={onClose}
+      title="Add Product Colour"
+      description="The backend generates the immutable Product Code."
+      footer={
+        <>
+          <Button variant="secondary" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button disabled={!colourId} isLoading={saving} onClick={save}>
+            Add Colour
+          </Button>
+        </>
+      }
+    >
+      <div className="space-y-4">
+        {error ? <p className="text-sm text-red-700">{error}</p> : null}
+        <Select
+          label="Colour"
+          value={colourId}
+          onChange={(event) => setColourId(event.target.value)}
+        >
+          <option value="">Select Colour</option>
+          {colours.map((colour) => (
+            <option
+              key={colour._id}
+              disabled={existing.includes(colour._id)}
+              value={colour._id}
+            >
+              {colour.name}
+            </option>
+          ))}
+        </Select>
+      </div>
+    </Modal>
+  );
+}
+function AddSkuModal({
+  colour,
+  productId,
+  onClose,
+  onCreated,
+}: {
+  colour: ProductColourWithSkus | null;
+  productId: string;
+  onClose: () => void;
+  onCreated: () => void;
+}) {
+  const [size, setSize] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const save = async () => {
+    if (!colour) return;
+    setSaving(true);
+    try {
+      await productApi.createVariant(productId, {
+        productColourId: colour._id,
+        size: size.trim(),
+      });
+      onCreated();
+      setSize("");
+    } catch (reason) {
+      setError(getApiErrorMessage(reason, "Unable to create SKU."));
+    } finally {
+      setSaving(false);
+    }
+  };
+  return (
+    <Modal
+      isOpen={Boolean(colour)}
+      onClose={onClose}
+      title="Add Size Set SKU"
+      description="Enter a range or list. The backend creates/reuses the Size Set and generates the uppercase immutable SKU."
+      footer={
+        <>
+          <Button variant="secondary" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button disabled={!size.trim()} isLoading={saving} onClick={save}>
+            Create SKU
+          </Button>
+        </>
+      }
+    >
+      <>
+        {error ? <p className="mb-3 text-sm text-red-700">{error}</p> : null}
+        <Input
+          label="Size / Size Set"
+          value={size}
+          onChange={(event) => setSize(event.target.value.toUpperCase())}
+          placeholder="S-XL or 30-38"
+        />
+      </>
+    </Modal>
+  );
+}
+function Info({ label, value }: { label: string; value: string }) {
+  return (
+    <div>
+      <p className="text-xs font-semibold uppercase tracking-wide text-neutral-500">
+        {label}
+      </p>
+      <p className="mt-1 text-sm font-medium text-neutral-900">{value}</p>
+    </div>
+  );
+}
